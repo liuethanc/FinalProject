@@ -23,12 +23,12 @@
   <div id="extra2">
   </div>
   <!-- mainwindow -->
-  <div id="map">
+  <div id="map"></div>
     <script>
-    var mheight = 700;
-        var mwidth = 1000;
-        var projection = d3.geoMercator()
-        var wa = void 0;
+    var mheight = 580;
+        var mwidth = 1190;
+        var projection = d3.geoEquirectangular()
+        var countries = void 0;
 
     var path = d3.geoPath().projection(projection);
     var svg = d3.select("#map")
@@ -37,19 +37,36 @@
             .attr("height", mheight);
 
 
-            d3.json('data/world.geojson').then(function(data) {
-              console.log('world', data);
+            Promise.all([d3.json('data/world-110.json'), d3.csv('data/internetUsers.csv' )])
 
-          projection.scale(1).translate([0, 0]);
-              var b = path.bounds(data);
-              var s = .95 / Math.max((b[1][0] - b[0][0]) / mwidth, (b[1][1] -
-          b[0][1]) / mheight);
-              var t = [(mwidth - s * (b[1][0] + b[0][0])) / 2, (mheight - s *
-          (b[1][1] + b[0][1])) / 2+50];
-              projection.scale(s).translate(t);
-              });
+                    .then(function ready(loadData) {
 
-  </div>
+                      var world = loadData[0]
+                      var data = loadData[1]
+                      var countries = topojson.feature(world, world.objects.ne_110m_admin_0_countries);
+                      var colorScale = d3.scaleSequential(d3.interpolatePlasma).domain([0, 1]);
+                      var internetUsers = d3.nest().key(function(d){return d.country}).map(data);                                  //4
+                      var internetUsersSorted = data.slice().sort(function(a,b){return d3.descending(+a.users2020, +b.users2020);})   //5
+                      var countryList = internetUsersSorted.map(d => d.country);                                                         //6
+                      var internetUsersbyCountry = new Map(data.map(d => [d.country, +d.users2020]));
 
+                      projection.scale(1).translate([0, 0]);
+                          var b = path.bounds(countries);
+                          var s = .95 / Math.max((b[1][0] - b[0][0]) / mwidth, (b[1][1] -
+                      b[0][1]) / mheight);
+                          var t = [(mwidth - s * (b[1][0] + b[0][0])) / 2, (mheight - s *
+                      (b[1][1] + b[0][1])) / 2+50];
+                          projection.scale(s).translate(t);
+
+                      svg.selectAll("path")
+                      .data(countries.features)
+                      .enter()
+                      .append("path")
+                      .attr("d", path)
+                      .attr("class", "country")
+                      .style("fill", function (d) {return colorScale(internetUsersbyCountry.get(d.properties.admin));});
+
+                         });
+</script>
 </body>
 </html>
