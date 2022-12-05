@@ -37,6 +37,7 @@
             .attr("height", mheight);
 
 
+
             Promise.all([d3.json('data/world-110.json'), d3.csv('data/internetUsers.csv' )])
 
                     .then(function ready(loadData) {
@@ -48,8 +49,9 @@
                       var colorScale = d3.scaleSequential(d3.interpolatePlasma).domain([0, 1]);
                       var internetUsers = d3.nest().key(function(d){return d.country}).map(data);                                  //4
                       var internetUsersSorted = data.slice().sort(function(a,b){return d3.descending(+a.users2020, +b.users2020);})   //5
-                      var countryList = internetUsersSorted.map(d => d.country);                                                         //6
+                      var countryList = internetUsersSorted.map(d => d.country);                                                     //6
                       var internetUsersbyCountry = new Map(data.map(d => [d.country, +d.users2020]));
+                      var db = d3.map();
 
                       projection.scale(1).translate([0, 0]);
                           var b = path.bounds(countries);
@@ -59,36 +61,58 @@
                       (b[1][1] + b[0][1])) / 2+50];
                           projection.scale(s).translate(t);
 
+
+            var sparkline = d3.charts.sparkline()
+                     .height(260)
+                     .width(310);
+
                       var chartmargin = {top: 10, right: 30, bottom: 30, left: 30},
-                          chartwidth = 400 - chartmargin.left - chartmargin.right,
-                          chartheight = 300 - chartmargin.top - chartmargin.bottom;
-                      var chart = d3.select("#info2")
+                          chartwidth = 700 - chartmargin.left - chartmargin.right,
+                          chartheight = 100 - chartmargin.top - chartmargin.bottom;
+                      var chart = d3.select("#extra2")
                           .append("svg")
                           .attr("width", chartwidth + chartmargin.left + chartmargin.right)
                           .attr("height", chartheight + chartmargin.top + chartmargin.bottom)
                           .append("g").attr('class', 'line')
                           .attr("transform","translate(" + chartmargin.left + "," + chartmargin.top + ")");
                       var x = d3.scaleLinear()
-                          .domain([2000, 2020])         // This is what is written on the Axis: from 0 to 100
+                          .domain([1990, 2020])         // This is what is written on the Axis: from 0 to 100
                           .range([0, chartwidth]);
                       chart.append("g")
                           .attr("transform", "translate(0," + chartheight + ")")
                           .call(d3.axisBottom(x).ticks(6));
 
+                       var y = d3.scaleLinear()
+                          .domain([0, 1])
+                          .range([ chartheight, 0 ]);    //y axis
+                          chart.append("g")
+                          .call(d3.axisLeft(y));
+
                       var hover = function(d) {
+                        var selected = d.properties.admin;
+                        console.log(selected);
                           var div = document.getElementById('info1');
                           d3.select(this).style('stroke', 'lightSteelBlue').style('stroke-width', 5)
                           .style('stroke-dasharray', ('3 3'))
                           div.innerHTML = d.properties.admin+ "<br/>" +" Total % of Internet Users by 2020: " +format(internetUsersbyCountry.get(d.properties.admin))
-                          var divChart = document.getElementById('info2')
-                          chart.datum(db.get(d.properties.users2020)).call(sparkline.draw);
+                          var divChart = document.getElementById('extra2')
+                          chart.append("path")
+                            .datum(data)
+                            .attr("fill", "none")
+                            .attr("stroke", "steelblue")
+                            .attr("stroke-width", 1.5)
+                            .attr("transform", "translate(0, 0)")
+                            .attr("d", d3.line()
+                              .x(function(d) { if (selected = d.country) {return x(d.Year) }})
+                              .y(function(d) { if (selected = d.country) {return y(d.users1) }})
+                            );
                       };
 
                       var out = function(d) {
-                        var div = document.getElementById('info1')
+                        var div = document.getElementById('extra2')
                         d3.select(this).transition().duration(500)
                         .style('stroke', function(d){return 'transparent'})
-                        var divChart = document.getElementById('info2')
+                        var divChart = document.getElementById('extra2')
                         chart.select('svg').remove();
                       }
 
@@ -102,6 +126,22 @@
                       .style('stroke', '#ccc')
                       .on('mouseover', hover)
                       .on('mouseout', out);
+
+                        // creating a legend
+
+                      svg.append("g")
+                              .attr("class", "legend")
+                          .attr("transform", "translate(550,50)");
+
+                      var legendLinear = d3.legendColor()
+                          .shapeWidth(80)
+                          .orient('vertical')
+                          .scale(colorScale);
+
+                      svg.select(".legend")
+                          .attr("transform", "translate(50,400)")
+                          .call(legendLinear);
+
                          });
 </script>
 </body>
