@@ -22,9 +22,12 @@
     Smart Dashboard showing percentage of population with internet access by country, as well as broadband and mobile internet speed. By Ethan Liu and AZ Delacuesta.
   </div>
   <div id="extra2">
+    Share of internet users (world)
   </div>
   <!-- mainwindow -->
-  <div id="map"></div>
+  <div id="map">
+Internet Accessibility by Country Smart Dashboard
+  </div>
     <script>
     var mheight = 580;
         var mwidth = 1190;
@@ -59,18 +62,14 @@
                       var mobileSpeedbyCountry = new Map(data.map(d => [d.country, +d.mobile]));
                       var db = d3.map();
 
-                      projection.scale(1).translate([0, 0]);
+                      projection.scale(1.2).translate([0, 0]);
                           var b = path.bounds(countries);
                           var s = .95 / Math.max((b[1][0] - b[0][0]) / mwidth, (b[1][1] -
                       b[0][1]) / mheight);
-                          var t = [(mwidth - s * (b[1][0] + b[0][0])) / 2, (mheight - s *
-                      (b[1][1] + b[0][1])) / 2+50];
+                          var t = [(mwidth - s * (b[1][0] + b[0][0])) / 2+50, (mheight - s *
+                      (b[1][1] + b[0][1])) -700/ 2+50];
                           projection.scale(s).translate(t);
 
-                          function buildBar(d) {
-              //    draw a chart
-
-               }
 
                       var chartmargin = {top: 10, right: 30, bottom: 30, left: 30},
                           chartwidth = 700 - chartmargin.left - chartmargin.right,
@@ -98,10 +97,16 @@
                         var barChart = d3.select("#info1").append("svg")
                                         .attr('width', tipWidth).attr('height', tipHeight);
                         var selected = d.properties.admin;
+                        var x = d3.scaleLinear()
+                            .domain([1990, 2020])         // This is what is written on the Axis: from 0 to 100
+                            .range([0, chartwidth]);
+                        var y = d3.scaleLinear()
+                           .domain([0, 1])
+                           .range([ chartheight, 0 ]);
                         console.log(selected);
                           var div = document.getElementById('info1');
                           d3.select(this).style('stroke', 'lightSteelBlue').style('stroke-width', 5)
-                          .style('stroke-dasharray', ('3 3')).call(buildBar);
+                          .style('stroke-dasharray', ('3 3'));
                           div.innerHTML = d.properties.admin+ "<br/>" +" Total % of Internet Users by 2020: " +format(internetUsersbyCountry.get(d.properties.admin))
                           var divChart = document.getElementById('extra2')
                           chart.append("path")
@@ -114,11 +119,18 @@
                             .x(function(d) { return x(d.graphx) })
                             .y(function(d) { return y(d.graphy) })
                             );
+                          var circles = document.getElementById('extra2')
+                          chart.selectAll("circle")
+                             .data(internetUsersbyCountry)
+                             .enter()
+                             .append("circle")
+                             .attr('r','20')
+                             .attr("cx", function(d) {return  x(2020)})
+                             .attr("cy", function(d) {return  y(internetSpeedbyCountry.get(d.properties.admin))})
+                             .attr("fill", "limeGreen");
+
                             var div2 = document.getElementById('info2')
                             div2.innerHTML = "Broadband Internet Speed: " +internetSpeedbyCountry.get(d.properties.admin) + " mbps" + "<br/><br/>" + "Mobile Internet Speed: " +mobileSpeedbyCountry.get(d.properties.admin) +" mbps"
-
-                            var xScale = d3.scaleLinear().domain([0, 1]).range([0, tipWidth]);
-                            yScale = d3.scaleBand().domain(countryList).rangeRound([0, tipHeight]);
 
 
                       };
